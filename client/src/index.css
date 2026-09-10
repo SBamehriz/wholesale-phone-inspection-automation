@@ -2,172 +2,304 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   Tokens
+   Every colour gets defined here in light mode first. Dark mode and the
+   accessibility preferences below only redeclare them, they never introduce
+   a new one.
+   ========================================================================== */
+
 :root {
-  --background: hsl(0, 0%, 100%);
-  --foreground: hsl(0, 0%, 0%);
-  --muted: hsl(0, 0%, 96%);
-  --muted-foreground: hsl(0, 0%, 45%);
-  --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(0, 0%, 0%);
-  --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(0, 0%, 0%);
-  --border: hsl(0, 0%, 89%);
-  --input: hsl(0, 0%, 89%);
-  --primary: hsl(0, 84%, 55%);
-  --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(0, 0%, 96%);
-  --secondary-foreground: hsl(0, 0%, 9%);
-  --accent: hsl(0, 0%, 96%);
-  --accent-foreground: hsl(0, 0%, 9%);
-  --destructive: hsl(0, 84%, 60%);
-  --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(0, 84%, 55%);
-  --radius: 0.5rem;
+  color-scheme: light;
 
-  /* Brand colors */
-  --brand-red: hsl(0, 84%, 55%);
-  --brand-dark-red: hsl(0, 85%, 45%);
-  --brand-black: hsl(0, 0%, 0%);
-  --brand-gray: hsl(210, 20%, 15%);
-  --brand-light-gray: hsl(210, 17%, 96%);
+  /* Surfaces, from the page backdrop upward. */
+  --bg: 240 6% 96%;
+  --surface: 0 0% 100%;
+  --surface-sunken: 240 6% 98%;
+  --surface-raised: 0 0% 100%;
+
+  /* Translucent chrome. The heavier the material, the more structural it is. */
+  --material-bar: 240 6% 96% / 0.72;
+  --material-panel: 0 0% 100% / 0.76;
+  --material-overlay: 240 6% 8% / 0.28;
+  --material-edge: 0 0% 100% / 0.7;
+
+  /* Ink. */
+  --ink: 240 6% 10%;
+  --ink-secondary: 240 4% 38%;
+  --ink-tertiary: 240 4% 56%;
+  --ink-on-accent: 0 0% 100%;
+
+  --line: 240 6% 89%;
+  --line-strong: 240 5% 80%;
+
+  /* One accent, used only for the primary action and for the live state. */
+  --accent: 356 78% 47%;
+  --accent-hover: 356 78% 41%;
+  --accent-soft: 356 80% 96%;
+  --accent-ink: 356 72% 38%;
+
+  /* Status colours. These carry meaning, they are never decoration. */
+  --positive: 152 58% 34%;
+  --positive-soft: 152 52% 94%;
+  --caution: 33 88% 40%;
+  --caution-soft: 36 92% 94%;
+  --critical: 4 72% 47%;
+  --critical-soft: 4 80% 96%;
+  --info: 214 84% 46%;
+  --info-soft: 214 90% 96%;
+
+  --shadow-sm: 0 1px 2px hsl(240 6% 10% / 0.06), 0 1px 1px hsl(240 6% 10% / 0.04);
+  --shadow-md: 0 4px 16px hsl(240 6% 10% / 0.08), 0 1px 3px hsl(240 6% 10% / 0.05);
+  --shadow-lg: 0 24px 60px hsl(240 6% 10% / 0.18), 0 2px 8px hsl(240 6% 10% / 0.08);
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 18px;
+
+  /* Springs. Critically damped by default. Bounce is saved for motion that
+     follows a gesture or something you committed to. */
+  --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 0.9, 0.3);
 }
 
-.dark {
-  --background: hsl(0, 0%, 0%);
-  --foreground: hsl(0, 0%, 98%);
-  --muted: hsl(0, 0%, 15%);
-  --muted-foreground: hsl(0, 0%, 65%);
-  --popover: hsl(0, 0%, 0%);
-  --popover-foreground: hsl(0, 0%, 98%);
-  --card: hsl(0, 0%, 0%);
-  --card-foreground: hsl(0, 0%, 98%);
-  --border: hsl(0, 0%, 15%);
-  --input: hsl(0, 0%, 15%);
-  --primary: hsl(0, 84%, 55%);
-  --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(0, 0%, 15%);
-  --secondary-foreground: hsl(0, 0%, 98%);
-  --accent: hsl(0, 0%, 15%);
-  --accent-foreground: hsl(0, 0%, 98%);
-  --destructive: hsl(0, 62%, 31%);
-  --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(0, 84%, 55%);
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: 240 6% 7%;
+  --surface: 240 5% 11%;
+  --surface-sunken: 240 6% 9%;
+  --surface-raised: 240 5% 14%;
+
+  --material-bar: 240 6% 9% / 0.7;
+  --material-panel: 240 5% 13% / 0.78;
+  --material-overlay: 240 10% 2% / 0.5;
+  --material-edge: 0 0% 100% / 0.09;
+
+  --ink: 240 12% 97%;
+  --ink-secondary: 240 6% 68%;
+  --ink-tertiary: 240 5% 50%;
+  --ink-on-accent: 0 0% 100%;
+
+  --line: 240 5% 20%;
+  --line-strong: 240 5% 30%;
+
+  --accent: 356 82% 57%;
+  --accent-hover: 356 82% 63%;
+  --accent-soft: 356 40% 17%;
+  --accent-ink: 356 88% 74%;
+
+  --positive: 152 52% 60%;
+  --positive-soft: 152 32% 15%;
+  --caution: 36 88% 62%;
+  --caution-soft: 33 40% 15%;
+  --critical: 4 82% 66%;
+  --critical-soft: 4 38% 17%;
+  --info: 214 90% 68%;
+  --info-soft: 214 44% 17%;
+
+  --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.4);
+  --shadow-md: 0 4px 16px hsl(0 0% 0% / 0.45), 0 1px 3px hsl(0 0% 0% / 0.3);
+  --shadow-lg: 0 24px 60px hsl(0 0% 0% / 0.6), 0 2px 8px hsl(0 0% 0% / 0.4);
 }
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-line;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-size-adjust: 100%;
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply bg-bg text-ink;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue",
+      system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.47;
+    letter-spacing: -0.01em;
+    font-optical-sizing: auto;
   }
 
-  /* Smoother scrolling */
-  html {
-    scroll-behavior: smooth;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+  /* Tracking depends on size. Large type reads too loose, small type too tight. */
+  .text-display {
+    font-size: clamp(1.5rem, 1.3rem + 0.8vw, 2rem);
+    line-height: 1.06;
+    letter-spacing: -0.028em;
+    font-weight: 700;
+  }
+
+  .text-title {
+    font-size: 1.3125rem;
+    line-height: 1.19;
+    letter-spacing: -0.021em;
+    font-weight: 640;
+  }
+
+  .text-heading {
+    font-size: 1rem;
+    line-height: 1.3;
+    letter-spacing: -0.012em;
+    font-weight: 620;
+  }
+
+  .text-body {
+    font-size: 0.9375rem;
+    line-height: 1.47;
+    letter-spacing: -0.008em;
+  }
+
+  .text-caption {
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    letter-spacing: 0;
+  }
+
+  .text-micro {
+    font-size: 0.6875rem;
+    line-height: 1.3;
+    letter-spacing: 0.02em;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .numeric {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  .mono {
+    font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+    font-variant-ligatures: none;
+    letter-spacing: -0.02em;
+  }
+
+  /* One focus treatment everywhere, and only for people using a keyboard. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--accent));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: hsl(var(--accent) / 0.22);
+  }
+
+  /* Scrollbars that recede into the surface they sit on. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--line-strong)) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--line-strong));
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    border-radius: 99px;
   }
 }
 
-@layer utilities {
-  .brand-red {
-    color: var(--brand-red);
+/* ==========================================================================
+   Materials
+   Translucent layers with content moving underneath them, rather than solid
+   strips that eat the viewport. The weight tells you the hierarchy.
+   ========================================================================== */
+
+@layer components {
+  .material-bar {
+    background: hsl(var(--material-bar));
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
   }
-  .bg-brand-red {
-    background-color: var(--brand-red);
+
+  .material-panel {
+    background: hsl(var(--material-panel));
+    backdrop-filter: saturate(180%) blur(30px);
+    -webkit-backdrop-filter: saturate(180%) blur(30px);
+    border: 1px solid hsl(var(--material-edge));
   }
-  .border-brand-red {
-    border-color: var(--brand-red);
+
+  /* Bigger surfaces read as thicker glass, so more blur and a deeper shadow. */
+  .material-sheet {
+    background: hsl(var(--material-panel));
+    backdrop-filter: saturate(200%) blur(48px);
+    -webkit-backdrop-filter: saturate(200%) blur(48px);
+    border: 1px solid hsl(var(--material-edge));
+    box-shadow: var(--shadow-lg);
   }
-  .text-brand-red {
-    color: var(--brand-red);
-  }
-  .text-brand-dark-red {
-    color: var(--brand-dark-red);
-  }
-  .hover\:bg-brand-dark-red:hover {
-    background-color: var(--brand-dark-red);
-  }
-  .brand-black {
-    color: var(--brand-black);
-  }
-  .bg-brand-black {
-    background-color: var(--brand-black);
-  }
-  .text-brand-black {
-    color: var(--brand-black);
-  }
-  .brand-gradient {
-    background: linear-gradient(135deg, var(--brand-black) 0%, var(--brand-gray) 100%);
-  }
-  .bg-brand-gradient {
-    background: linear-gradient(135deg, var(--brand-black) 0%, var(--brand-gray) 100%);
+
+  /* A fade where content meets floating chrome, instead of a hard 1px rule. */
+  .scroll-edge::after {
+    content: "";
+    position: absolute;
+    inset: 100% 0 auto 0;
+    height: 20px;
+    background: linear-gradient(hsl(var(--bg) / 0.5), transparent);
+    pointer-events: none;
   }
 }
 
-/* --- Subtle page-load animation ----------------------------------------- */
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.animate-in {
-  animation: fadeInUp 0.3s ease-out both;
+/* ==========================================================================
+   Accessibility preferences
+   Each one is answered on its own, and none of them takes feedback away. They
+   only change what form it takes.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-/* --- Card hover lift ----------------------------------------------------- */
-.card-hover {
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-.card-hover:hover {
-  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-  transform: translateY(-2px);
-}
-
-/* --- Nav active link indicator ------------------------------------------ */
-.nav-link {
-  position: relative;
-  transition: color 0.15s ease;
-}
-.nav-link::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--brand-red);
-  transform: scaleX(0);
-  transition: transform 0.2s ease;
-}
-.nav-link.active::after,
-.nav-link:hover::after {
-  transform: scaleX(1);
-}
-.nav-link.active {
-  color: var(--brand-red);
+@media (prefers-reduced-transparency: reduce) {
+  .material-bar,
+  .material-panel,
+  .material-sheet {
+    background: hsl(var(--surface));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
-/* --- Better focus outlines ---------------------------------------------- */
-*:focus-visible {
-  outline: 2px solid var(--brand-red);
-  outline-offset: 2px;
-}
+@media (prefers-contrast: more) {
+  :root {
+    --line: 240 6% 62%;
+    --line-strong: 240 6% 40%;
+    --ink-secondary: 240 6% 24%;
+    --ink-tertiary: 240 6% 34%;
+  }
 
-/* --- Table row hover ---------------------------------------------------- */
-.table-row-hover:hover {
-  background-color: hsl(0, 0%, 98%);
-}
+  :root[data-theme="dark"] {
+    --line: 240 6% 46%;
+    --line-strong: 240 6% 62%;
+    --ink-secondary: 240 8% 86%;
+    --ink-tertiary: 240 8% 74%;
+  }
 
-/* --- Skeleton shimmer --------------------------------------------------- */
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-.skeleton {
-  background: linear-gradient(90deg, hsl(0,0%,93%) 25%, hsl(0,0%,97%) 50%, hsl(0,0%,93%) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
-  border-radius: 4px;
+  .material-bar,
+  .material-panel,
+  .material-sheet {
+    background: hsl(var(--surface));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-color: hsl(var(--line-strong));
+  }
 }

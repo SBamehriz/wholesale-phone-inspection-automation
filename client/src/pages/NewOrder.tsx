@@ -1,172 +1,155 @@
-import React, { useState } from "react";
-import { Card, CardContent } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
-import { ArrowLeft, Plus, Hash, User, Package, FileText } from "lucide-react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "../lib/queryClient";
-import { useToast } from "../hooks/use-toast";
+import { Loader2, ScanLine, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
 
+import { Page, PageHeader } from "../components/PageHeader";
+import { Button } from "../components/ui/Button";
+import { Field, Input, Textarea } from "../components/ui/Field";
+import { Card } from "../components/ui/Surface";
+import { useToast } from "../components/ui/Toast";
+import { api } from "../lib/api";
+import { ordersKey, setActiveOrderId, type Order } from "../lib/orders";
+
+/** Order numbers are 12 digits. Generating one saves reading it off a label. */
+function randomOrderNumber(): string {
+  const digits = new Uint32Array(2);
+  crypto.getRandomValues(digits);
+  return String(100_000_000_000 + ((digits[0] * 0x100000000 + digits[1]) % 900_000_000_000));
+}
+
 export default function NewOrder() {
-  const [, setLocation] = useLocation();
-  const [formData, setFormData] = useState({
-    orderNumber: "",
-    clientName: "",
-    expectedQuantity: "",
-    description: "",
+  const [, navigate] = useLocation();
+  const client = useQueryClient();
+  const toast = useToast();
+
+  const [orderNumber, setOrderNumber] = useState("");
+  const [customer, setCustomer] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [description, setDescription] = useState("");
+
+  const numberError =
+    orderNumber && !/^\d{12}$/.test(orderNumber)
+      ? `${orderNumber.length} of 12 digits`
+      : undefined;
+
+  const create = useMutation({
+    mutationFn: () =>
+      api<Order>("POST", "/api/orders", {
+        orderNumber: orderNumber || undefined,
+        client: customer.trim(),
+        description: description.trim(),
+        expectedQuantity: Number(quantity),
+      }),
+    onSuccess: (order) => {
+      client.invalidateQueries({ queryKey: ordersKey });
+      // Straight into the work, because a new lot is sitting there to be scanned.
+      setActiveOrderId(order.id);
+      toast.success("Order created", `${order.orderNumber} is ready to scan.`);
+      navigate("/scan");
+    },
+    onError: (error: Error) => toast.error("Could not create the order", error.message),
   });
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  const createOrder = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/orders", data);
-      return response;
-    },
-    onSuccess: () => {
-      toast({ title: "Order Created", description: "New order has been created successfully." });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders/recent"] });
-      setLocation("/past-orders");
-    },
-    onError: (error) => {
-      toast({ title: "Creation Failed", description: error.message || "Failed to create order", variant: "destructive" });
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.orderNumber.trim() || !/^\d{12}$/.test(formData.orderNumber)) {
-      toast({ title: "Validation Error", description: "Order number must be exactly 12 digits", variant: "destructive" });
-      return;
-    }
-    if (!formData.clientName.trim()) {
-      toast({ title: "Validation Error", description: "Please enter the client's name", variant: "destructive" });
-      return;
-    }
-    if (!formData.expectedQuantity || parseInt(formData.expectedQuantity) <= 0) {
-      toast({ title: "Validation Error", description: "Please enter a valid quantity", variant: "destructive" });
-      return;
-    }
-    if (!formData.description.trim()) {
-      toast({ title: "Validation Error", description: "Please enter an order description", variant: "destructive" });
-      return;
-    }
-
-    createOrder.mutate({
-      orderNumber: formData.orderNumber,
-      expectedQuantity: parseInt(formData.expectedQuantity),
-      notes: `Client: ${formData.clientName}\nDescription: ${formData.description}`,
-    });
-  };
+  const valid = customer.trim() && Number(quantity) > 0 && !numberError;
 
   return (
-    <div className="container mx-auto px-6 py-8 max-w-xl animate-in">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">New Order</h2>
-          <p className="text-xs text-gray-500">Create a new inspection order</p>
-        </div>
-        <Button
-          onClick={() => setLocation("/")}
-          variant="ghost"
-          size="sm"
-          className="text-gray-500 hover:text-gray-900 h-8"
+    <Page>
+      <PageHeader
+        title="New order"
+        description="Register an incoming lot before scanning it in."
+        back={{ href: "/orders", label: "Orders" }}
+      />
+
+      <Card className="p-6">
+        <form
+          className="space-y-5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (valid) create.mutate();
+          }}
         >
-          <ArrowLeft className="w-3.5 h-3.5 mr-1" />
-          Back
-        </Button>
-      </div>
-
-      <Card className="border-0 shadow-sm">
-        <CardContent className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-5">
-
-            {/* Order Number */}
-            <div>
-              <Label htmlFor="orderNumber" className="text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-1.5">
-                <Hash className="w-3 h-3" />
-                Order Number
-                <span className="text-gray-400 font-normal">(12 digits)</span>
-              </Label>
+          <Field
+            label="Order number"
+            hint="Leave it blank and one will be assigned."
+            error={numberError}
+            aside={
+              <button
+                type="button"
+                onClick={() => setOrderNumber(randomOrderNumber())}
+                className="text-caption text-accent-ink flex items-center gap-1 font-semibold transition-opacity hover:opacity-70"
+              >
+                <Sparkles className="h-3 w-3" />
+                Generate
+              </button>
+            }
+          >
+            {(props) => (
               <Input
-                id="orderNumber"
-                type="text"
-                value={formData.orderNumber}
-                onChange={(e) => setFormData({ ...formData, orderNumber: e.target.value.replace(/\D/g, "") })}
-                className="font-mono text-sm h-9"
+                {...props}
+                value={orderNumber}
+                onChange={(event) => setOrderNumber(event.target.value.replace(/\D/g, "").slice(0, 12))}
                 placeholder="000000000000"
-                maxLength={12}
+                inputMode="numeric"
+                className="mono"
+              />
+            )}
+          </Field>
+
+          <Field label="Client">
+            {(props) => (
+              <Input
+                {...props}
+                value={customer}
+                onChange={(event) => setCustomer(event.target.value)}
+                placeholder="TechBridge Distributors LLC"
+                autoFocus
                 required
               />
-            </div>
+            )}
+          </Field>
 
-            {/* Client Name */}
-            <div>
-              <Label htmlFor="clientName" className="text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-1.5">
-                <User className="w-3 h-3" />
-                Client Name
-              </Label>
+          <Field label="Expected devices" hint="The lot is complete when this many are signed off.">
+            {(props) => (
               <Input
-                id="clientName"
-                type="text"
-                value={formData.clientName}
-                onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-                className="text-sm h-9"
-                placeholder="e.g. TechBridge Distributors LLC"
-                required
-              />
-            </div>
-
-            {/* Quantity */}
-            <div>
-              <Label htmlFor="expectedQuantity" className="text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-1.5">
-                <Package className="w-3 h-3" />
-                Expected Quantity
-              </Label>
-              <Input
-                id="expectedQuantity"
+                {...props}
                 type="number"
-                min="1"
-                value={formData.expectedQuantity}
-                onChange={(e) => setFormData({ ...formData, expectedQuantity: e.target.value })}
-                className="text-sm h-9"
-                placeholder="Number of devices"
+                min={1}
+                value={quantity}
+                onChange={(event) => setQuantity(event.target.value)}
+                placeholder="24"
+                className="numeric"
                 required
               />
-            </div>
+            )}
+          </Field>
 
-            {/* Description */}
-            <div>
-              <Label htmlFor="description" className="text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-1.5">
-                <FileText className="w-3 h-3" />
-                Order Description
-              </Label>
+          <Field label="Description" hint="Models, carrier status, where it shipped from.">
+            {(props) => (
               <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="text-sm min-h-[80px] resize-none"
-                placeholder="e.g. Mixed Apple iPhone 15 Pro and Samsung Galaxy S24 Ultra. Carrier-unlocked, Dallas TX."
-                required
+                {...props}
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="Mixed iPhone 15 Pro and Galaxy S24 Ultra, carrier unlocked. Dallas, TX."
               />
-            </div>
+            )}
+          </Field>
 
-            <Button
-              type="submit"
-              className="w-full bg-brand-red hover:bg-brand-dark-red text-white text-sm font-semibold h-10"
-              disabled={createOrder.isPending}
-            >
-              <Plus className="w-4 h-4 mr-1.5" />
-              {createOrder.isPending ? "Creating..." : "Create Order"}
+          <div className="flex justify-end gap-2 border-t border-line pt-5">
+            <Button variant="ghost" onClick={() => navigate("/orders")}>
+              Cancel
             </Button>
-          </form>
-        </CardContent>
+            <Button type="submit" variant="primary" size="lg" disabled={!valid || create.isPending}>
+              {create.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+              ) : (
+                <ScanLine className="h-4 w-4" />
+              )}
+              Create and start scanning
+            </Button>
+          </div>
+        </form>
       </Card>
-    </div>
+    </Page>
   );
 }

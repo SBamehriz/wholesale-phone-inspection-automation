@@ -1,118 +1,173 @@
-interface PhoneSpecs {
+import { imeiCheckDigit, isValidImei, parseDeviceId } from "../../shared/inspection";
+
+/**
+ * Working out what a device is.
+ *
+ * The first eight digits of an IMEI are the Type Allocation Code, and that
+ * tells you the exact model. A real deployment would query a paid TAC database
+ * or a carrier API right here. This build ships a local catalogue with the same
+ * lookup shape, so putting a network call in means replacing one function.
+ */
+
+export interface DeviceSpecs {
   brand: string;
   model: string;
-  storage?: string;
-  color?: string;
-  releaseYear?: string;
+  storage: string;
+  color: string;
+  releaseYear: number;
+  /** Where the identification came from, so the UI can be honest about it. */
+  source: "tac" | "serial-prefix" | "unknown";
 }
 
-// ---------------------------------------------------------------------------
-// Mock IMEI Lookup — returns realistic phone specifications
-// In production, this would call an external IMEI verification API.
-// For the demo, we derive specs from common IMEI prefixes (TAC codes).
-// ---------------------------------------------------------------------------
-
-const phoneCatalog: Array<{
-  prefix: string;
+interface CatalogEntry {
   brand: string;
-  models: Array<{ model: string; storage: string; color: string; year: string }>;
-}> = [
-  {
-    prefix: "35345678",
+  model: string;
+  releaseYear: number;
+  storage: string[];
+  colors: string[];
+}
+
+/** Maps a TAC prefix to a model. The keys are the first 8 digits of an IMEI. */
+const TAC_CATALOG: Record<string, CatalogEntry> = {
+  "35674108": {
     brand: "Apple",
-    models: [
-      { model: "iPhone 15 Pro Max", storage: "256 GB", color: "Natural Titanium", year: "2023" },
-      { model: "iPhone 15", storage: "128 GB", color: "Blue", year: "2023" },
-      { model: "iPhone 14 Pro", storage: "256 GB", color: "Deep Purple", year: "2022" },
-      { model: "iPhone 13", storage: "128 GB", color: "Midnight", year: "2021" },
-      { model: "iPhone 12", storage: "64 GB", color: "Green", year: "2020" },
-    ],
+    model: "iPhone 15 Pro",
+    releaseYear: 2023,
+    storage: ["128 GB", "256 GB", "512 GB", "1 TB"],
+    colors: ["Black Titanium", "White Titanium", "Natural Titanium", "Blue Titanium"],
   },
-  {
-    prefix: "35487654",
+  "35930184": {
+    brand: "Apple",
+    model: "iPhone 15",
+    releaseYear: 2023,
+    storage: ["128 GB", "256 GB", "512 GB"],
+    colors: ["Black", "Blue", "Green", "Yellow", "Pink"],
+  },
+  "35110297": {
+    brand: "Apple",
+    model: "iPhone 14",
+    releaseYear: 2022,
+    storage: ["128 GB", "256 GB", "512 GB"],
+    colors: ["Midnight", "Starlight", "Blue", "Purple", "Product RED"],
+  },
+  "35291840": {
     brand: "Samsung",
-    models: [
-      { model: "Galaxy S24 Ultra", storage: "256 GB", color: "Titanium Gray", year: "2024" },
-      { model: "Galaxy S23", storage: "128 GB", color: "Phantom Black", year: "2023" },
-      { model: "Galaxy A54", storage: "128 GB", color: "Awesome Violet", year: "2023" },
-      { model: "Galaxy Z Fold 5", storage: "512 GB", color: "Icy Blue", year: "2023" },
-      { model: "Galaxy S22 Ultra", storage: "256 GB", color: "Burgundy", year: "2022" },
-    ],
+    model: "Galaxy S24 Ultra",
+    releaseYear: 2024,
+    storage: ["256 GB", "512 GB", "1 TB"],
+    colors: ["Titanium Black", "Titanium Gray", "Titanium Violet", "Titanium Yellow"],
   },
-  {
-    prefix: "86123456",
-    brand: "OnePlus",
-    models: [
-      { model: "12", storage: "256 GB", color: "Flowy Emerald", year: "2024" },
-      { model: "11 5G", storage: "256 GB", color: "Titan Black", year: "2023" },
-      { model: "Nord CE 3", storage: "128 GB", color: "Aqua Surge", year: "2023" },
-    ],
+  "35408371": {
+    brand: "Samsung",
+    model: "Galaxy S24+",
+    releaseYear: 2024,
+    storage: ["256 GB", "512 GB"],
+    colors: ["Onyx Black", "Marble Gray", "Cobalt Violet", "Amber Yellow"],
   },
-  {
-    prefix: "86987654",
-    brand: "Xiaomi",
-    models: [
-      { model: "14 Pro", storage: "256 GB", color: "Black", year: "2024" },
-      { model: "13 Pro", storage: "256 GB", color: "Ceramic Black", year: "2023" },
-      { model: "Redmi Note 13 Pro", storage: "128 GB", color: "Midnight Black", year: "2024" },
-    ],
-  },
-  {
-    prefix: "35090078",
+  "86204719": {
     brand: "Google",
-    models: [
-      { model: "Pixel 8 Pro", storage: "128 GB", color: "Bay", year: "2023" },
-      { model: "Pixel 7a", storage: "128 GB", color: "Charcoal", year: "2023" },
-      { model: "Pixel 8", storage: "128 GB", color: "Obsidian", year: "2023" },
-    ],
+    model: "Pixel 8 Pro",
+    releaseYear: 2023,
+    storage: ["128 GB", "256 GB", "512 GB"],
+    colors: ["Obsidian", "Porcelain", "Bay"],
   },
-];
+  "86730155": {
+    brand: "Google",
+    model: "Pixel 8",
+    releaseYear: 2023,
+    storage: ["128 GB", "256 GB"],
+    colors: ["Obsidian", "Hazel", "Rose", "Mint"],
+  },
+  "86119240": {
+    brand: "OnePlus",
+    model: "12",
+    releaseYear: 2024,
+    storage: ["256 GB", "512 GB"],
+    colors: ["Silky Black", "Flowy Emerald"],
+  },
+};
 
-// Fallback catalog for unknown prefixes
-const fallbackPhones: Array<{ brand: string; model: string; storage: string; color: string; year: string }> = [
-  { brand: "Apple", model: "iPhone 14", storage: "128 GB", color: "Midnight", year: "2022" },
-  { brand: "Samsung", model: "Galaxy S23", storage: "128 GB", color: "Phantom Black", year: "2023" },
-  { brand: "Google", model: "Pixel 8", storage: "128 GB", color: "Obsidian", year: "2023" },
-  { brand: "OnePlus", model: "11 5G", storage: "256 GB", color: "Titan Black", year: "2023" },
-  { brand: "Xiaomi", model: "13 Pro", storage: "256 GB", color: "Ceramic Black", year: "2023" },
-  { brand: "Samsung", model: "Galaxy A54", storage: "128 GB", color: "Awesome Lime", year: "2023" },
-  { brand: "Apple", model: "iPhone 13 Pro", storage: "256 GB", color: "Sierra Blue", year: "2021" },
-  { brand: "Google", model: "Pixel 7 Pro", storage: "256 GB", color: "Snow", year: "2022" },
-];
+/** Serial prefixes for WiFi only devices, which have no IMEI at all. */
+const SERIAL_CATALOG: Record<string, CatalogEntry> = {
+  GTAB: {
+    brand: "Google",
+    model: "Pixel Tablet",
+    releaseYear: 2023,
+    storage: ["128 GB", "256 GB"],
+    colors: ["Porcelain", "Hazel", "Rose"],
+  },
+  IPAD: {
+    brand: "Apple",
+    model: "iPad 10th generation",
+    releaseYear: 2022,
+    storage: ["64 GB", "256 GB"],
+    colors: ["Silver", "Blue", "Pink", "Yellow"],
+  },
+  STAB: {
+    brand: "Samsung",
+    model: "Galaxy Tab S9",
+    releaseYear: 2023,
+    storage: ["128 GB", "256 GB"],
+    colors: ["Graphite", "Beige"],
+  },
+};
 
-export async function lookupIMEI(imei: string): Promise<PhoneSpecs> {
-  // Validate IMEI format (must be 15 digits)
-  if (!/^\d{15}$/.test(imei)) {
-    throw new Error("Invalid IMEI format. Must be exactly 15 digits.");
+/**
+ * Picks a variant out of the identifier itself, so the same device ID always
+ * gives the same storage and colour across restarts and across reports.
+ */
+function variantFor(entry: CatalogEntry, id: string): DeviceSpecs {
+  // FNV-1a with a final avalanche, so IMEIs issued back to back in one lot
+  // still spread out across the available colours and capacities.
+  let hash = 2166136261;
+  for (let i = 0; i < id.length; i++) {
+    hash = Math.imul(hash ^ id.charCodeAt(i), 16777619) >>> 0;
   }
-
-  // Simulate network delay for realism
-  await new Promise((resolve) => setTimeout(resolve, 300 + Math.random() * 400));
-
-  // Try to match a known prefix
-  for (const entry of phoneCatalog) {
-    if (imei.startsWith(entry.prefix)) {
-      // Deterministically pick a model based on remaining digits
-      const idx = parseInt(imei.slice(-2), 10) % entry.models.length;
-      const phone = entry.models[idx];
-      return {
-        brand: entry.brand,
-        model: phone.model,
-        storage: phone.storage,
-        color: phone.color,
-        releaseYear: phone.year,
-      };
-    }
-  }
-
-  // Fallback: deterministically pick from the general catalog
-  const idx = parseInt(imei.slice(-3), 10) % fallbackPhones.length;
-  const phone = fallbackPhones[idx];
+  hash = (hash ^ (hash >>> 15)) >>> 0;
   return {
-    brand: phone.brand,
-    model: phone.model,
-    storage: phone.storage,
-    color: phone.color,
-    releaseYear: phone.year,
+    brand: entry.brand,
+    model: entry.model,
+    releaseYear: entry.releaseYear,
+    storage: entry.storage[hash % entry.storage.length],
+    color: entry.colors[Math.floor(hash / entry.storage.length) % entry.colors.length],
+    source: "tac",
   };
 }
+
+/** Builds an IMEI with a valid checksum out of a TAC and a serial number. */
+export function buildImei(tac: string, serial: number): string {
+  const prefix = `${tac}${String(serial).padStart(6, "0")}`.slice(0, 14);
+  return prefix + imeiCheckDigit(prefix);
+}
+
+export function lookupDevice(rawId: string): DeviceSpecs {
+  const parsed = parseDeviceId(rawId);
+  if (parsed.kind === "invalid") throw new Error(parsed.reason);
+
+  if (parsed.kind === "imei") {
+    const entry = TAC_CATALOG[parsed.value.slice(0, 8)];
+    if (entry) return variantFor(entry, parsed.value);
+    return {
+      brand: "Unknown",
+      model: "Unrecognised TAC",
+      storage: "Unknown",
+      color: "Unknown",
+      releaseYear: 0,
+      source: "unknown",
+    };
+  }
+
+  const prefix = parsed.value.slice(0, 4);
+  const entry = SERIAL_CATALOG[prefix];
+  if (entry) return { ...variantFor(entry, parsed.value), source: "serial-prefix" };
+  return {
+    brand: "Unknown",
+    model: "Unrecognised serial",
+    storage: "Unknown",
+    color: "Unknown",
+    releaseYear: 0,
+    source: "unknown",
+  };
+}
+
+export { isValidImei };

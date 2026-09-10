@@ -1,109 +1,98 @@
-import React, { useState } from "react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Card, CardContent } from "../components/ui/card";
-import { Smartphone, LogIn, Info } from "lucide-react";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { ArrowRight, ScanLine } from "lucide-react";
+
+import { Button } from "../components/ui/Button";
+import { Field, Input } from "../components/ui/Field";
 import { useSignIn } from "../lib/auth";
-import { useToast } from "../hooks/use-toast";
+import { spring, useSpring } from "../lib/motion";
 
 export default function SignIn() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const signIn = useSignIn();
-  const { toast } = useToast();
+  const transition = useSpring(spring);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username || !password) {
-      toast({ title: "Error", description: "Please enter both username and password", variant: "destructive" });
-      return;
-    }
-    signIn.mutate(
-      { username, password },
-      {
-        onError: (error) => {
-          toast({ title: "Sign In Failed", description: error.message || "Invalid credentials", variant: "destructive" });
-        },
-      }
-    );
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    signIn.mutate({ username: username.trim(), password });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-brand-gradient p-4">
-      <div className="w-full max-w-sm animate-in">
-        {/* Logo block */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-brand-red mb-3">
-            <Smartphone className="w-6 h-6 text-white" />
-          </div>
-          <h1 className="text-xl font-bold text-white">Phone Inspection System</h1>
-          <p className="text-gray-400 text-xs mt-1">Quality control & device grading</p>
+    <div className="relative grid min-h-screen place-items-center overflow-hidden bg-bg px-4 py-10">
+      {/* A single soft light source behind the card, low enough not to compete
+          with the form. Not animated: a slow looping background is exactly the
+          kind of motion that makes people ill. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-0 h-[420px] w-[720px] max-w-[140vw] -translate-x-1/2 -translate-y-1/3 rounded-full bg-accent/[0.12] blur-3xl"
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={transition}
+        className="relative w-full max-w-[22rem]"
+      >
+        <div className="mb-7 text-center">
+          <span className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-lg bg-accent text-ink-on-accent shadow-md">
+            <ScanLine className="h-6 w-6" />
+          </span>
+          <h1 className="text-title text-ink">Phone Inspection</h1>
+          <p className="text-caption text-ink-secondary mt-1">
+            Wholesale device intake, grading and reporting
+          </p>
         </div>
 
-        <Card className="border-0 shadow-2xl">
-          <CardContent className="p-6">
-            {/* Demo notice */}
-            <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg p-2.5 mb-5">
-              <Info className="w-3.5 h-3.5 text-blue-500 mt-0.5 shrink-0" />
-              <p className="text-[11px] text-blue-700 leading-relaxed">
-                <span className="font-semibold">Demo Mode</span> — Enter any username and password to sign in.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="username" className="text-xs font-medium text-gray-600 mb-1.5 block">
-                  Username
-                </Label>
+        <div className="material-panel rounded-xl p-5 shadow-md">
+          <form onSubmit={submit} className="space-y-4">
+            <Field label="Username">
+              {(props) => (
                 <Input
-                  id="username"
-                  type="text"
+                  {...props}
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="h-9 text-sm"
-                  placeholder="Enter username"
+                  onChange={(event) => setUsername(event.target.value)}
+                  autoComplete="username"
+                  autoFocus
                   required
                 />
-              </div>
+              )}
+            </Field>
 
-              <div>
-                <Label htmlFor="password" className="text-xs font-medium text-gray-600 mb-1.5 block">
-                  Password
-                </Label>
+            <Field
+              label="Password"
+              error={signIn.isError ? (signIn.error as Error).message : undefined}
+            >
+              {(props) => (
                 <Input
-                  id="password"
+                  {...props}
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-9 text-sm"
-                  placeholder="Enter password"
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
                   required
                 />
-              </div>
+              )}
+            </Field>
 
-              <Button
-                type="submit"
-                className="w-full bg-brand-red hover:bg-brand-dark-red text-white text-sm font-semibold h-9"
-                disabled={signIn.isPending}
-              >
-                {signIn.isPending ? (
-                  "Signing in..."
-                ) : (
-                  <>
-                    <LogIn className="w-3.5 h-3.5 mr-1.5" />
-                    Sign In
-                  </>
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              className="w-full"
+              disabled={signIn.isPending || !username.trim() || !password}
+            >
+              {signIn.isPending ? "Signing in" : "Sign in"}
+              {!signIn.isPending && <ArrowRight className="h-4 w-4" />}
+            </Button>
+          </form>
+        </div>
 
-        <p className="text-center text-[10px] text-gray-500 mt-4">
-          Inspection Software Demo
+        <p className="text-caption text-ink-tertiary mt-4 text-center leading-relaxed">
+          This is a demo build. Any username and password opens a session with five
+          sample orders already loaded.
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 }

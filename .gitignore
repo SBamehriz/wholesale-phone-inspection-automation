@@ -1,32 +1,13 @@
-# Dependencies
 node_modules/
-
-# Build outputs
 dist/
-server/public/
 
 # Environment & secrets
 .env
 .env.*
 !.env.example
 
-# Generated reports
-temp/*.xlsx
-temp/*.json
-
 # OS / editor
 .DS_Store
 *.log
-
-# Local database
-dev.sqlite
-
-# Vite config backups
-vite.config.ts.*
-
-# Archives
-*.tar.gz
-
-# Python
-__pycache__/
-*.pyc
+.vscode/
+.idea/
