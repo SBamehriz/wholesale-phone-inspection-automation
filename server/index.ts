@@ -1,100 +1,103 @@
-import express, { type Request, Response, NextFunction } from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { log, serveStatic, setupVite } from "./vite";
+import { MAX_IMAGES_PER_INSPECTION } from "../shared/inspection";
+
+const isProduction = process.env.NODE_ENV === "production";
 
 const app = express();
 app.disable("x-powered-by");
+// Behind a reverse proxy, the secure session cookie only gets set if Express
+// believes the original request came in over HTTPS.
+if (isProduction) app.set("trust proxy", 1);
 
-app.use((req, res, next) => {
+const CSP = [
+  "default-src 'self'",
+  // Captured photos are held as data URLs, and the camera preview is a blob.
+  "img-src 'self' data: blob:",
+  "media-src 'self' blob:",
+  "style-src 'self' 'unsafe-inline'",
+  // The built bundle loads as external modules and needs no inline scripts.
+  // Only the Vite dev client does, so the allowance stops at the dev server.
+  isProduction ? "script-src 'self'" : "script-src 'self' 'unsafe-inline'",
+  // Development needs the HMR websocket.
+  isProduction ? "connect-src 'self'" : "connect-src 'self' ws: wss:",
+  "font-src 'self' data:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
+
+app.use((_req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Permissions-Policy", "camera=(self), microphone=(), geolocation=()");
-  res.setHeader(
-    "Content-Security-Policy",
-    [
-      "default-src 'self'",
-      "img-src 'self' data: blob:",
-      "style-src 'self' 'unsafe-inline'",
-      "script-src 'self' 'unsafe-inline'",
-      "connect-src 'self'",
-      "font-src 'self' data:",
-      "media-src 'self' blob:",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "frame-ancestors 'none'",
-    ].join('; '),
-  );
-
-  if (req.method === "OPTIONS") {
-    res.sendStatus(204);
-    return;
+  res.setHeader("Content-Security-Policy", CSP);
+  if (isProduction) {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   }
-
   next();
 });
 
-app.use(express.json({ limit: "1mb" }));
-app.use(express.urlencoded({ extended: false, limit: "1mb" }));
+// Inspection photos travel as base64 data URLs, so the body limit has to be
+// big enough for a full set of them.
+app.use(express.json({ limit: `${MAX_IMAGES_PER_INSPECTION * 2}mb` }));
 
 app.use((req, res, next) => {
-  const start = Date.now();
+  if (!req.path.startsWith("/api")) return next();
+
+  // Grab it now, because a mounted router rewrites `req.url` before finish fires.
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
+  const start = Date.now();
   res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 160) {
-        logLine = logLine.slice(0, 159) + "…";
-      }
-
-      log(logLine);
-    }
+    log(`${req.method} ${path} ${res.statusCode} in ${Date.now() - start}ms`);
   });
-
   next();
 });
 
-(async () => {
-  const server = await registerRoutes(app);
+const server = registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+app.use("/api", (_req, res) => {
+  res.status(404).json({ message: "Not found" });
+});
 
-    res.status(status).json({ message });
+app.use((error: any, _req: Request, res: Response, _next: NextFunction) => {
+  const status = error?.status ?? error?.statusCode ?? 500;
+  if (status >= 500) console.error(error);
+  res.status(status).json({
+    message: status >= 500 ? "Something went wrong on our end" : error?.message || "Bad request",
   });
+});
 
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
+if (isProduction) {
+  serveStatic(app);
+} else {
+  await setupVite(app, server);
+}
+
+const port = Number(process.env.PORT ?? 5000);
+
+server.on("error", (error: NodeJS.ErrnoException) => {
+  // The two everyone runs into deserve a sentence, not a stack trace.
+  if (error.code === "EADDRINUSE") {
+    log(`Port ${port} is already in use. Stop the other process, or run with PORT=5001 npm run dev.`);
+  } else if (error.code === "EACCES") {
+    log(`Not allowed to bind port ${port}. Ports below 1024 need elevated privileges.`);
   } else {
-    serveStatic(app);
+    console.error(error);
   }
+  process.exit(1);
+});
 
-  const port = Number(process.env.PORT ?? "5000");
+server.listen(port, () => log(`ready on http://localhost:${port}`));
 
-  server.listen(port, () => {
-    log(`serving on http://localhost:${port}`);
-  });
+const shutdown = () => {
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 3000).unref();
+};
 
-  const shutdown = () => {
-    server.close(() => process.exit(0));
-    setTimeout(() => process.exit(1), 3000);
-  };
-
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
-})();
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);

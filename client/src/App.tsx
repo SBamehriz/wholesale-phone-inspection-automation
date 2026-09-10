@@ -1,68 +1,87 @@
-import React from "react";
-import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "./components/ui/toaster";
-import { TooltipProvider } from "./components/ui/tooltip";
+import { AnimatePresence, motion } from "framer-motion";
+import { Route, Switch, useLocation } from "wouter";
+
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { Navigation } from "./components/Navigation";
+import { ToastProvider } from "./components/ui/Toast";
+import { queryClient } from "./lib/api";
 import { useAuth } from "./lib/auth";
-import SignIn from "./pages/SignIn";
-import SignUp from "./pages/SignUp";
+import { spring, useRise, useSpring } from "./lib/motion";
+import { ThemeProvider } from "./lib/theme";
+
 import Dashboard from "./pages/Dashboard";
 import NewOrder from "./pages/NewOrder";
-import PastOrders from "./pages/PastOrders";
-import StationSelection from "./pages/StationSelection";
-import ScanningStation from "./pages/ScanningStation";
-import PhotographingStation from "./pages/PhotographingStation";
+import NotFound from "./pages/NotFound";
+import OrderDetail from "./pages/OrderDetail";
+import Orders from "./pages/Orders";
+import PhotoStation from "./pages/PhotoStation";
 import Reports from "./pages/Reports";
-import Navigation from "./components/Navigation";
-import NotFound from "./pages/not-found";
+import ScanStation from "./pages/ScanStation";
+import SignIn from "./pages/SignIn";
 
-function Router() {
+function Routes() {
+  const [location] = useLocation();
+  const rise = useRise(6);
+  const transition = useSpring(spring);
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.main
+        key={location}
+        variants={rise}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        transition={transition}
+      >
+        <Switch location={location}>
+          <Route path="/" component={Dashboard} />
+          <Route path="/orders" component={Orders} />
+          <Route path="/orders/new" component={NewOrder} />
+          <Route path="/orders/:id" component={OrderDetail} />
+          <Route path="/scan" component={ScanStation} />
+          <Route path="/photos" component={PhotoStation} />
+          <Route path="/reports" component={Reports} />
+          <Route component={NotFound} />
+        </Switch>
+      </motion.main>
+    </AnimatePresence>
+  );
+}
+
+function Shell() {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-brand-gradient">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="grid min-h-screen place-items-center bg-bg">
+        <span className="sr-only">Loading</span>
+        <span className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-accent motion-reduce:animate-none" />
       </div>
     );
   }
 
-  if (!user) {
-    return (
-    <Switch>
-      <Route path="/signup" component={SignUp} />
-      <Route path="/" component={SignIn} />
-    </Switch>
-    );
-  }
+  if (!user) return <SignIn />;
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-bg">
       <Navigation user={user} />
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/new-order" component={NewOrder} />
-        <Route path="/past-orders" component={PastOrders} />
-        <Route path="/reports" component={Reports} />
-        <Route path="/station-selection" component={StationSelection} />
-        <Route path="/scanning" component={ScanningStation} />
-        <Route path="/photographing" component={PhotographingStation} />
-        <Route component={NotFound} />
-      </Switch>
+      <Routes />
     </div>
   );
 }
 
-function App() {
+export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider>
+            <Shell />
+          </ToastProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
-
-export default App;
