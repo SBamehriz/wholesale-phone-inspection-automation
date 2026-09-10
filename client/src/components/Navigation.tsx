@@ -7,7 +7,7 @@ import { useActiveOrder } from "../lib/orders";
 import { spring, useSpring } from "../lib/motion";
 import { useTheme, type ThemePreference } from "../lib/theme";
 import { cn } from "../lib/utils";
-import { Button } from "./ui/Button";
+import { Button } from "./ui/button";
 import { Segmented } from "./ui/Segmented";
 
 /** Named after what is inside them, rather than something vague like Home. */

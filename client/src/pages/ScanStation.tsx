@@ -18,11 +18,11 @@ import { DefectPicker } from "../components/DefectPicker";
 import { GRADE_TONE, GradePicker } from "../components/GradePicker";
 import { OrderProgress } from "../components/OrderProgress";
 import { Page, PageHeader } from "../components/PageHeader";
-import { Button } from "../components/ui/Button";
+import { Button } from "../components/ui/button";
 import { Field, Input, Textarea } from "../components/ui/Field";
 import { Kbd } from "../components/ui/Kbd";
 import { Badge, Card, Empty } from "../components/ui/Surface";
-import { useToast } from "../components/ui/Toast";
+import { useToast } from "../components/ui/toast";
 import { ApiError, api } from "../lib/api";
 import { spring, springLively, useSpring } from "../lib/motion";
 import {

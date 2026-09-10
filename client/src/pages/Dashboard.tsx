@@ -4,7 +4,7 @@ import { Link, useLocation } from "wouter";
 
 import { OrderProgress } from "../components/OrderProgress";
 import { Page, PageHeader } from "../components/PageHeader";
-import { Button } from "../components/ui/Button";
+import { Button } from "../components/ui/button";
 import { Badge, Card, CardHeader, Empty, Skeleton } from "../components/ui/Surface";
 import { spring, useRise, useSpring, useStagger } from "../lib/motion";
 import { formatDate, setActiveOrderId, useOrders, type Order } from "../lib/orders";

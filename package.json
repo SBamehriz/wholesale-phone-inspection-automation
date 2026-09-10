@@ -1,5 +1,5 @@
 {
-  "name": "phone-inspection-software",
+  "name": "wholesale-phone-inspection-automation",
   "version": "1.0.0",
   "description": "Wholesale phone inspection workflow \u2014 barcode-driven IMEI intake, condition grading, photo capture and Excel reporting.",
   "type": "module",

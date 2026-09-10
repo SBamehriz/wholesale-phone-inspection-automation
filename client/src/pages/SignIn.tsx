@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, ScanLine } from "lucide-react";
 
-import { Button } from "../components/ui/Button";
+import { Button } from "../components/ui/button";
 import { Field, Input } from "../components/ui/Field";
 import { useSignIn } from "../lib/auth";
 import { spring, useSpring } from "../lib/motion";

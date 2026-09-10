@@ -6,9 +6,9 @@ import { DEFECTS, GRADES, defectLabel } from "@shared/inspection";
 
 import { GRADE_TONE } from "../components/GradePicker";
 import { Page, PageHeader } from "../components/PageHeader";
-import { Button } from "../components/ui/Button";
+import { Button } from "../components/ui/button";
 import { Badge, Card, CardHeader, Empty, Skeleton } from "../components/ui/Surface";
-import { useToast } from "../components/ui/Toast";
+import { useToast } from "../components/ui/toast";
 import { download } from "../lib/api";
 import { formatDate, useOrders } from "../lib/orders";
 import { cn } from "../lib/utils";

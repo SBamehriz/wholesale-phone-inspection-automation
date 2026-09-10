@@ -5,7 +5,7 @@ import { Link } from "wouter";
 
 import { OrderProgress } from "../components/OrderProgress";
 import { Page, PageHeader } from "../components/PageHeader";
-import { Button } from "../components/ui/Button";
+import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/Field";
 import { Segmented } from "../components/ui/Segmented";
 import { Badge, Card, Empty, Skeleton } from "../components/ui/Surface";

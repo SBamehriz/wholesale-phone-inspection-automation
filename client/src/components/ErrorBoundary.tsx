@@ -1,7 +1,7 @@
 import { Component, type ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
 
-import { Button } from "./ui/Button";
+import { Button } from "./ui/button";
 
 interface State {
   error: Error | null;

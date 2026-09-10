@@ -17,11 +17,11 @@ import { defectLabel } from "@shared/inspection";
 import { GRADE_TONE } from "../components/GradePicker";
 import { OrderProgress } from "../components/OrderProgress";
 import { Page, PageHeader } from "../components/PageHeader";
-import { Button } from "../components/ui/Button";
-import { Dialog } from "../components/ui/Dialog";
+import { Button } from "../components/ui/button";
+import { Dialog } from "../components/ui/dialog";
 import { Field, Input, Textarea } from "../components/ui/Field";
 import { Badge, Card, Empty, Skeleton, Stat } from "../components/ui/Surface";
-import { useToast } from "../components/ui/Toast";
+import { useToast } from "../components/ui/toast";
 import { api, download } from "../lib/api";
 import { spring, useSpring } from "../lib/motion";
 import {
@@ -392,7 +392,7 @@ function EditOrderDialog({
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
+      onOpenChange={(next: boolean) => {
         if (next) {
           setClient(order.client);
           setDescription(order.description);

@@ -4,7 +4,7 @@
 
 **Scanner first intake, grading and reporting for wholesale phone lots.**
 
-[![CI](https://github.com/SBamehriz/Inspection-software/actions/workflows/ci.yml/badge.svg)](https://github.com/SBamehriz/Inspection-software/actions/workflows/ci.yml)
+[![CI](https://github.com/SBamehriz/wholesale-phone-inspection-automation/actions/workflows/ci.yml/badge.svg)](https://github.com/SBamehriz/wholesale-phone-inspection-automation/actions/workflows/ci.yml)
 [![License MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520.19-5FA04E.svg)](https://nodejs.org)
 [![Zero runtime vulnerabilities](https://img.shields.io/badge/npm%20audit-0%20vulnerabilities-brightgreen.svg)](#security)
@@ -16,8 +16,8 @@ Wholesale phone lots arrive by the hundred. Every device has to be identified, g
 This app takes the typing out. You scan a device and it identifies itself from the IMEI. One keystroke grades it, one more flags a defect, and <kbd>Enter</kbd> saves it and gets the next scan ready. Your hands never leave the scanner.
 
 ```bash
-git clone https://github.com/SBamehriz/Inspection-software.git
-cd Inspection-software
+git clone https://github.com/SBamehriz/wholesale-phone-inspection-automation.git
+cd wholesale-phone-inspection-automation
 npm install
 npm run dev
 ```

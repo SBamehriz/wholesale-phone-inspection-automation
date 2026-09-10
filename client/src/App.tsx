@@ -4,7 +4,7 @@ import { Route, Switch, useLocation } from "wouter";
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Navigation } from "./components/Navigation";
-import { ToastProvider } from "./components/ui/Toast";
+import { ToastProvider } from "./components/ui/toast";
 import { queryClient } from "./lib/api";
 import { useAuth } from "./lib/auth";
 import { spring, useRise, useSpring } from "./lib/motion";

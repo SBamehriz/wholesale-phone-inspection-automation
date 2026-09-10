@@ -4,10 +4,10 @@ import { Loader2, ScanLine, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
 
 import { Page, PageHeader } from "../components/PageHeader";
-import { Button } from "../components/ui/Button";
+import { Button } from "../components/ui/button";
 import { Field, Input, Textarea } from "../components/ui/Field";
 import { Card } from "../components/ui/Surface";
-import { useToast } from "../components/ui/Toast";
+import { useToast } from "../components/ui/toast";
 import { api } from "../lib/api";
 import { ordersKey, setActiveOrderId, type Order } from "../lib/orders";
 
